@@ -72,11 +72,6 @@ app.get("/", (req, res) => {
     res.send("Hello from the backend!");
 });
 
-const PORT = process.env.PORT || 10000; // Render defaults to 10000
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server is actively listening on port ${PORT}`);
-});
-
 // ==========================================
 // 🛠️ TEMPORARY ROUTE: Create First Admin
 // ==========================================
@@ -1121,4 +1116,9 @@ app.get('/reports/fy-ledger', verifyToken, async (req, res) => {
         console.error("Fetch FY Ledger Error:", error);
         res.status(500).json({ error: "Failed to fetch FY ledger data." });
     }
+});
+
+const PORT = process.env.PORT || 10000; // Render defaults to 10000
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server is actively listening on port ${PORT}`);
 });
