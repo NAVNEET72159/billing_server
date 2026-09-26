@@ -47,13 +47,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const db = mysql.createPool({
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 3306, // 🚀 NEW: Supports Aiven's custom port
+    port: process.env.DB_PORT || 27253, // Forces Aiven's port
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     ssl: {
-        rejectUnauthorized: false // 🚀 NEW: Satisfies Aiven's SSL requirement
+        rejectUnauthorized: false // Required by Aiven
     },
+    connectTimeout: 30000, // Gives the cloud DB 30 seconds to handshake
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
