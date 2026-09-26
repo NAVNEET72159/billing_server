@@ -139,9 +139,9 @@ app.get('/items', verifyToken, (req, res) => {
     const isArchived = req.query.archived === 'true';
     const query = isArchived
         ? `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
-           FROM ITEM WHERE is_active = FALSE`
+           FROM item WHERE is_active = FALSE`
         : `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
-           FROM ITEM WHERE is_active = TRUE`;
+           FROM item WHERE is_active = TRUE`;
     db.query(query, (err, results) => {
         if (err) 
             if (err) return res.status(500).json({ error: err.message });
@@ -182,7 +182,7 @@ app.post('/customer', verifyToken, async (req, res) => {
     const pincode = req.body.pincode || '';
 
     try {
-        const query = 'INSERT INTO CUSTOMER (customer_name, country_code, phone_number, alternate_number, email, current_address, permanent_address, city, state, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const query = 'INSERT INTO customer (customer_name, country_code, phone_number, alternate_number, email, current_address, permanent_address, city, state, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const values = [customer_name, country_code, phone_number, alternate_number, email, current_address, permanent_address, city, state, pincode];
         const [result] = await db.promise().query(query, values);
 
@@ -198,7 +198,7 @@ app.post('/customer', verifyToken, async (req, res) => {
 
 app.get('/customers', verifyToken, async (req, res) => {
     try {
-        const query = 'SELECT * FROM CUSTOMER ORDER BY customer_name ASC';
+        const query = 'SELECT * FROM customer ORDER BY customer_name ASC';
         const [rows] = await db.promise().query(query);
         res.status(200).json(rows);
     } catch (error) {
@@ -335,7 +335,7 @@ app.post('/checkout', verifyToken, (req, res) => {
                     ]);
 
                     const itemsQuery = `
-                        INSERT INTO SALES_ITEM (sale_id, item_id, sale_rate, quantity, tax_amount, amount) 
+                        INSERT INTO sales_item (sale_id, item_id, sale_rate, quantity, tax_amount, amount) 
                         VALUES ?
                     `;
 
@@ -542,7 +542,7 @@ app.get('/invoices', verifyToken, async (req, res) => {
             SELECT s.sale_id, s.invoice_number, s.grand_total, s.payment_method, s.sale_date, 
                    c.customer_name, c.phone_number, c.current_address
             FROM SALES s
-            LEFT JOIN CUSTOMER c ON s.customer_id = c.customer_id
+            LEFT JOIN customer c ON s.customer_id = c.customer_id
             ORDER BY s.sale_date DESC
         `;
         const [invoices] = await db.promise().query(query);
@@ -559,13 +559,13 @@ app.delete('/invoices/:id', verifyToken, async (req, res) => {
 
     try {
         await connection.beginTransaction();
-        const getItemsQuery = 'SELECT item_id, quantity FROM SALES_ITEM WHERE sale_id = ?';
+        const getItemsQuery = 'SELECT item_id, quantity FROM sales_item WHERE sale_id = ?';
         const [soldItems] = await connection.query(getItemsQuery, [saleId]);
         for (let item of soldItems) {
             const restockQuery = 'UPDATE ITEM SET stock = stock + ? WHERE item_id = ?';
             await connection.query(restockQuery, [item.quantity, item.item_id]);
         }
-        await connection.query('DELETE FROM SALES_ITEM WHERE sale_id = ?', [saleId]);
+        await connection.query('DELETE FROM sales_item WHERE sale_id = ?', [saleId]);
         const [deleteResult] = await connection.query('DELETE FROM SALES WHERE sale_id = ?', [saleId]);
         if (deleteResult.affectedRows === 0) {
             throw new Error("Invoice not found.");
@@ -587,7 +587,7 @@ app.get('/invoices/:id/items', verifyToken, async (req, res) => {
     try {
         const query = `
             SELECT si.item_id, si.quantity, si.sale_rate, si.tax_amount, si.amount, i.item_name, i.barcode 
-            FROM SALES_ITEM si
+            FROM sales_item si
             LEFT JOIN ITEM i ON si.item_id = i.item_id
             WHERE si.sale_id = ?
         `;
@@ -634,9 +634,9 @@ app.get('/reports/monthly-top-items', verifyToken, async (req, res) => {
                 MONTH(s.sale_date) AS month_num,
                 i.item_name,
                 SUM(si.quantity) AS total_sold
-            FROM SALES_ITEM si
-            JOIN SALES s ON si.sale_id = s.sale_id
-            JOIN ITEM i ON si.item_id = i.item_id
+            FROM sales_item si
+            JOIN sales s ON si.sale_id = s.sale_id
+            JOIN item i ON si.item_id = i.item_id
             GROUP BY month_num, month_name, i.item_name
             ORDER BY month_num ASC, total_sold DESC
         `;
@@ -897,7 +897,7 @@ app.post('/invoices/:sale_id/return-item', verifyToken, async (req, res) => {
             await db.promise().query('DELETE FROM SALES_ITEM WHERE sale_id = ? AND item_id = ?', [sale_id, item_id]);
         } else {
             await db.promise().query(
-                'UPDATE SALES_ITEM SET quantity = quantity - ?, amount = amount - ?, tax_amount = tax_amount - ? WHERE sale_id = ? AND item_id = ?',
+                'UPDATE sales_item SET quantity = quantity - ?, amount = amount - ?, tax_amount = tax_amount - ? WHERE sale_id = ? AND item_id = ?',
                 [returnQty, deductionAmount, deductionTax, sale_id, item_id]
             );
         }
@@ -1108,7 +1108,7 @@ app.get('/reports/fy-ledger', verifyToken, async (req, res) => {
         const query = `
             SELECT l.financial_year, l.closing_stock, l.snapshot_date, i.item_name, i.barcode, i.unit
             FROM item_yearly_ledger l
-            JOIN ITEM i ON l.item_id = i.item_id
+            JOIN item i ON l.item_id = i.item_id
             ORDER BY l.financial_year DESC, i.item_name ASC
         `;
         const [results] = await db.promise().query(query);
