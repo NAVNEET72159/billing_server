@@ -9,7 +9,14 @@ const { ZipArchive } = require('archiver');
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://billing-app-topaz-seven.vercel.app', // Your Live Vercel App
+        'http://localhost:8081'                       // Local Expo Web Testing
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 const multer = require('multer');
@@ -1111,5 +1118,3 @@ app.get('/reports/fy-ledger', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch FY ledger data." });
     }
 });
-
-app.use(cors({ origin: 'https://your-vercel-app-url.vercel.app' }));
