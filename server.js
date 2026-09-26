@@ -80,7 +80,7 @@ app.get("/", (req, res) => {
 app.post('/setup-admin', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash('admin123', 10);
-        const query = 'INSERT INTO APP_USERS (username, password_hash, role) VALUES (?, ?, ?)';
+        const query = 'INSERT INTO app_users (username, password_hash, role) VALUES (?, ?, ?)';
         db.query(query, ['superadmin', hashedPassword, 'ADMIN'], (err, result) => {
             if (err) {
                 return res.status(400).json({ error: err.message });
@@ -98,7 +98,7 @@ app.post('/setup-admin', async (req, res) => {
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    const query = 'SELECT * FROM APP_USERS WHERE username = ?';
+    const query = 'SELECT * FROM app_users WHERE username = ?';
     db.query(query, [username], async (err, results) => {
         if (err) 
             return res.status(500).json({ error: err.message });
