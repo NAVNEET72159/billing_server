@@ -288,7 +288,7 @@ app.post('/checkout', verifyToken, (req, res) => {
             // 🚀 NEW LOGIC: Generate Smart Invoice Number securely inside the transaction
             const fy = getInvoiceFY();
             const prefix = `INV-${fy}-`;
-            const lastInvoiceQuery = `SELECT invoice_number FROM SALES WHERE invoice_number LIKE ? ORDER BY invoice_number DESC LIMIT 1`;
+            const lastInvoiceQuery = `SELECT invoice_number FROM sales WHERE invoice_number LIKE ? ORDER BY invoice_number DESC LIMIT 1`;
 
             connection.query(lastInvoiceQuery, [`${prefix}%`], (err, existingInvoices) => {
                 if (err) {
@@ -310,7 +310,7 @@ app.post('/checkout', verifyToken, (req, res) => {
 
                 // STEP A: Insert into the SALES table (The Header)
                 const salesQuery = `
-                    INSERT INTO SALES (invoice_number, customer_id, total_tax_amount, grand_total, payment_method) 
+                    INSERT INTO sales (invoice_number, customer_id, total_tax_amount, grand_total, payment_method) 
                     VALUES (?, ?, ?, ?, ?)
                 `;
                 
