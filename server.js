@@ -68,9 +68,9 @@ app.get("/", (req, res) => {
     res.send("Hello from the backend!");
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+const PORT = process.env.PORT || 10000; // Render defaults to 10000
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server is actively listening on port ${PORT}`);
 });
 
 // ==========================================
