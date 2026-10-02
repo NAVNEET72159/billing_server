@@ -11,8 +11,9 @@ require("dotenv").config();
 const app = express();
 app.use(cors({
     origin: [
-        'https://billing-app-topaz-seven.vercel.app', // Your Live Vercel App
-        'http://localhost:8081'                       // Local Expo Web Testing
+        'https://billing-app-topaz-seven.vercel.app',  // Your main production domain
+        'http://localhost:8081',                       // Local Expo Web Testing
+        /\.vercel\.app$/                               // 🚀 NEW: Whitelists ALL future Vercel preview links!
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
