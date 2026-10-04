@@ -70,6 +70,21 @@ db.getConnection((err, connection)=>{
     }
 });
 
+// 🚀 Role verification middleware
+const authorizeRoles = (...allowedRoles) => {
+    return (req, res, next) => {
+        // req.user comes from your verifyToken middleware
+        if (!req.user || !allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: "Access denied. Insufficient permissions." });
+        }
+        next();
+    };
+};
+
+app.get("/", (req, res) => {
+    res.send("Hello from the backend!");
+});
+
 app.get("/", (req, res) => {
     res.send("Hello from the backend!");
 });
@@ -136,7 +151,7 @@ app.post('/login', (req, res) => {
 // 📦 INVENTORY ROUTE (Protected)
 // ==========================================
 // Any logged-in user (Admin or Sales) can view items
-app.get('/items', verifyToken, (req, res) => {
+app.post('/items', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
     const isArchived = req.query.archived === 'true';
     const query = isArchived
         ? `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
@@ -150,7 +165,7 @@ app.get('/items', verifyToken, (req, res) => {
     });
 });
 
-app.put('/items/:id/restore', verifyToken, async (req, res) => {
+app.put('/items/:id', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
     const itemId = req.params.id;
 
     try {
@@ -268,7 +283,7 @@ const getInvoiceFY = () => {
 // ==========================================
 // 🛒 CHECKOUT ROUTE (Transactions)
 // ==========================================
-app.post('/checkout', verifyToken, (req, res) => {
+app.post('/checkout', verifyToken, authorizeRoles('ADMIN', 'MANAGER', 'SALESPERSON'), (req, res) => {
     const { 
         customer_id, 
         items, 
@@ -459,7 +474,7 @@ app.post('/upload-image', upload.single('image'), (req, res) => {
     res.status(200).json({ image_url: imageUrl });
 });
 
-app.delete('/items/:id', verifyToken, async (req, res) => {
+app.delete('/items/:id', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
     const itemId = req.params.id;
 
     try {
