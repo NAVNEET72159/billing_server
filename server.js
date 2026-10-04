@@ -261,6 +261,63 @@ app.put('/customer/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// 🛡️ STAFF MANAGEMENT ROUTES
+// ==========================================
+app.get('/staff', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
+    try {
+        const callerRole = req.user.role;
+        let query = '';
+        
+        // Admins see everyone below them
+        if (callerRole === 'ADMIN') {
+            query = `SELECT user_id, username, role, account_status FROM app_users WHERE role IN ('MANAGER', 'SALESPERSON') ORDER BY role, username`;
+        } 
+        // Managers only see Salespersons
+        else if (callerRole === 'MANAGER') {
+            query = `SELECT user_id, username, role, account_status FROM app_users WHERE role = 'SALESPERSON' ORDER BY username`;
+        }
+
+        const [staff] = await db.promise().query(query);
+        res.status(200).json(staff);
+    } catch (error) {
+        console.error("Fetch Staff Error:", error);
+        res.status(500).json({ error: "Failed to fetch staff from database" });
+    }
+});
+
+app.post('/staff', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    try {
+        // Enforce the hierarchy: Admins create Managers, Managers create Salespersons
+        const creatorRole = req.user.role;
+        const newUserRole = creatorRole === 'ADMIN' ? 'MANAGER' : 'SALESPERSON';
+
+        // Hash the password securely with a salt round of 10
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const query = 'INSERT INTO app_users (username, password_hash, role) VALUES (?, ?, ?)';
+        const [result] = await db.promise().query(query, [username, hashedPassword, newUserRole]);
+
+        res.status(201).json({ 
+            message: `${newUserRole} created successfully!`, 
+            insertId: result.insertId 
+        });
+    } catch (error) {
+        console.error("Create Staff Error:", error);
+        // Catch duplicate usernames specifically to give a clear error to the UI
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: "Username already exists. Please choose another." });
+        }
+        res.status(500).json({ error: "Failed to create staff member." });
+    }
+});
+
 // 🧾 UTILITY: Calculate Indian FY for Invoices (e.g., returns "2627")
 const getInvoiceFY = () => {
     const date = new Date();
