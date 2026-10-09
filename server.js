@@ -85,8 +85,16 @@ app.get("/", (req, res) => {
     res.send("Hello from the backend!");
 });
 
-app.get("/", (req, res) => {
-    res.send("Hello from the backend!");
+// ==========================================
+// 🛠️ TEMPORARY ROUTE: Unlock Role Column
+// ==========================================
+app.get('/unlock-roles', async (req, res) => {
+    try {
+        await db.promise().query("ALTER TABLE app_users MODIFY COLUMN role VARCHAR(50) NOT NULL");
+        res.send("✅ Success! The role column is now unlocked. You can now add Managers and Salespersons.");
+    } catch (error) {
+        res.status(500).send("❌ Database Error: " + error.message);
+    }
 });
 
 // ==========================================
