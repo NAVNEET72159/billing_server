@@ -151,7 +151,7 @@ app.post('/login', (req, res) => {
 // 📦 INVENTORY ROUTE (Protected)
 // ==========================================
 // Any logged-in user (Admin or Sales) can view items
-app.post('/items', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
+app.get('/items', verifyToken, async (req, res) => {
     const isArchived = req.query.archived === 'true';
     const query = isArchived
         ? `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
@@ -159,8 +159,7 @@ app.post('/items', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, 
         : `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
            FROM item WHERE is_active = TRUE`;
     db.query(query, (err, results) => {
-        if (err) 
-            if (err) return res.status(500).json({ error: err.message });
+        if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
 });
