@@ -621,7 +621,7 @@ app.get('/invoices', verifyToken, async (req, res) => {
         const query = `
             SELECT s.sale_id, s.invoice_number, s.grand_total, s.payment_method, s.sale_date, 
                    c.customer_name, c.phone_number, c.current_address
-            FROM SALES s
+            FROM sales s
             LEFT JOIN customer c ON s.customer_id = c.customer_id
             ORDER BY s.sale_date DESC
         `;
