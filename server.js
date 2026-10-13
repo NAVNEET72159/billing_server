@@ -451,7 +451,7 @@ app.post('/checkout', verifyToken, authorizeRoles('ADMIN', 'MANAGER', 'SALESPERS
                             }
 
                             const currentItem = items[index];
-                            const stockUpdateQuery = `UPDATE ITEM SET stock = stock - ? WHERE item_id = ?`;
+                            const stockUpdateQuery = `UPDATE item SET stock = stock - ? WHERE item_id = ?`;
 
                             connection.query(stockUpdateQuery, [currentItem.quantity, currentItem.item_id], (err, result) => {
                                 if (err) {
@@ -642,11 +642,11 @@ app.delete('/invoices/:id', verifyToken, async (req, res) => {
         const getItemsQuery = 'SELECT item_id, quantity FROM sales_item WHERE sale_id = ?';
         const [soldItems] = await connection.query(getItemsQuery, [saleId]);
         for (let item of soldItems) {
-            const restockQuery = 'UPDATE ITEM SET stock = stock + ? WHERE item_id = ?';
+            const restockQuery = 'UPDATE item SET stock = stock + ? WHERE item_id = ?';
             await connection.query(restockQuery, [item.quantity, item.item_id]);
         }
         await connection.query('DELETE FROM sales_item WHERE sale_id = ?', [saleId]);
-        const [deleteResult] = await connection.query('DELETE FROM SALES WHERE sale_id = ?', [saleId]);
+        const [deleteResult] = await connection.query('DELETE FROM sales WHERE sale_id = ?', [saleId]);
         if (deleteResult.affectedRows === 0) {
             throw new Error("Invoice not found.");
         }
@@ -668,7 +668,7 @@ app.get('/invoices/:id/items', verifyToken, async (req, res) => {
         const query = `
             SELECT si.item_id, si.quantity, si.sale_rate, si.tax_amount, si.amount, i.item_name, i.barcode 
             FROM sales_item si
-            LEFT JOIN ITEM i ON si.item_id = i.item_id
+            LEFT JOIN item i ON si.item_id = i.item_id
             WHERE si.sale_id = ?
         `;
         const [items] = await db.promise().query(query, [saleId]);
@@ -955,7 +955,7 @@ app.post('/invoices/:sale_id/return-item', verifyToken, async (req, res) => {
         await db.promise().query('START TRANSACTION');
 
         const [saleItems] = await db.promise().query(
-            'SELECT * FROM SALES_ITEM WHERE sale_id = ? AND item_id = ?', 
+            'SELECT * FROM sales_item WHERE sale_id = ? AND item_id = ?', 
             [sale_id, item_id]
         );
 
@@ -974,7 +974,7 @@ app.post('/invoices/:sale_id/return-item', verifyToken, async (req, res) => {
         const deductionTax = (saleItem.tax_amount / saleItem.quantity) * returnQty; 
 
         if (returnQty === saleItem.quantity) {
-            await db.promise().query('DELETE FROM SALES_ITEM WHERE sale_id = ? AND item_id = ?', [sale_id, item_id]);
+            await db.promise().query('DELETE FROM sales_item WHERE sale_id = ? AND item_id = ?', [sale_id, item_id]);
         } else {
             await db.promise().query(
                 'UPDATE sales_item SET quantity = quantity - ?, amount = amount - ?, tax_amount = tax_amount - ? WHERE sale_id = ? AND item_id = ?',
@@ -1076,7 +1076,7 @@ app.get('/invoices/export/zip', verifyToken, async (req, res) => {
 
         for (let sale of sales) {
             const [items] = await db.promise().query(
-                `SELECT si.*, i.item_name FROM SALES_ITEM si LEFT JOIN ITEM i ON si.item_id = i.item_id WHERE si.sale_id = ?`, 
+                `SELECT si.*, i.item_name FROM sales_item si LEFT JOIN item i ON si.item_id = i.item_id WHERE si.sale_id = ?`, 
                 [sale.sale_id]
             );
 
@@ -1153,7 +1153,7 @@ app.post('/reports/fy-snapshot', verifyToken, async (req, res) => {
         const financial_year = month >= 3 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 
         // Fetch all active items from the main inventory
-        const [items] = await db.promise().query('SELECT item_id, stock FROM ITEM WHERE is_active = TRUE');
+        const [items] = await db.promise().query('SELECT item_id, stock FROM item WHERE is_active = TRUE');
         
         if (items.length === 0) return res.status(404).json({ error: "No active items found to snapshot." });
 
