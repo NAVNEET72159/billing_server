@@ -1203,3 +1203,45 @@ const PORT = process.env.PORT || 10000; // Render defaults to 10000
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server is actively listening on port ${PORT}`);
 });
+
+// PUT /staff/:id/role (Update Role)
+app.put('/staff/:id/role', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
+    const userId = req.params.id;
+    const { newRole } = req.body;
+
+    if (!['MANAGER', 'SALESPERSON'].includes(newRole)) {
+        return res.status(400).json({ error: "Invalid role selected." });
+    }
+
+    try {
+        const query = 'UPDATE app_users SET role = ? WHERE user_id = ?';
+        const [result] = await db.promise().query(query, [newRole, userId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.status(200).json({ message: "Role updated successfully!" });
+    } catch (error) {
+        console.error("Update Role Error:", error);
+        res.status(500).json({ error: "Failed to update role." });
+    }
+});
+
+// PUT /staff/:id/suspend (Toggle Suspend/Active)
+app.put('/staff/:id/suspend', verifyToken, authorizeRoles('ADMIN', 'MANAGER'), async (req, res) => {
+    const userId = req.params.id;
+    const { newStatus } = req.body; // 'ACTIVE' or 'SUSPENDED'
+
+    try {
+        const query = 'UPDATE app_users SET account_status = ? WHERE user_id = ?';
+        const [result] = await db.promise().query(query, [newStatus, userId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.status(200).json({ message: `Account marked as ${newStatus}` });
+    } catch (error) {
+        console.error("Suspend Error:", error);
+        res.status(500).json({ error: "Failed to update account status." });
+    }
+});
